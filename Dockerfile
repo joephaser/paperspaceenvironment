@@ -81,6 +81,7 @@ RUN python -m pip install --upgrade --no-cache-dir pip setuptools wheel \
         ipywidgets \
         nbformat \
         numba \
+        packaging \
     && python -m pip install --no-cache-dir \
         TA-Lib \
         autogluon \

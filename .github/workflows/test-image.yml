@@ -28,8 +28,14 @@ jobs:
       run: |
         echo "Testing the built Docker image..."
         
-        # Pull the latest image
-        docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+        # Wait a moment to ensure the new image is fully published
+        sleep 60
+        
+        # Force pull the latest image (bypass cache)
+        docker pull --no-cache ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+        
+        # Verify we have the latest image
+        docker image inspect ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest --format='{{.Created}}'
         
         # Test basic Python functionality
         docker run --rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest python -c "
@@ -87,6 +93,13 @@ jobs:
             import numpy as np
             import matplotlib.pyplot as plt
             print('✅ Data science stack imported')
+            print('   NumPy version:', np.__version__)
+            # Verify we have the correct NumPy version
+            from packaging import version
+            if version.parse(np.__version__) >= version.parse('1.24.0'):
+                print('⚠️  Warning: NumPy version may be too new for VectorBT')
+            else:
+                print('✅ NumPy version is compatible with VectorBT')
         except ImportError as e:
             print('❌ Data science stack failed:', e)
             exit(1)
