@@ -102,6 +102,10 @@ RUN python -m pip install --upgrade --no-cache-dir pip setuptools wheel \
         quantlib \
     && python -m pip cache purge
 
+# Copy and set up startup script (must be done as root before user switch)
+COPY start-jupyter.sh /usr/local/bin/start-jupyter.sh
+RUN chmod +x /usr/local/bin/start-jupyter.sh
+
 # Create a non-root user and workspace
 ARG USER=gradient
 ARG UID=1000
@@ -131,10 +135,6 @@ RUN mkdir -p /home/${USER}/.jupyter \
     && echo "c.ServerApp.token = ''" >> /home/${USER}/.jupyter/jupyter_lab_config.py \
     && echo "c.ServerApp.password = ''" >> /home/${USER}/.jupyter/jupyter_lab_config.py \
     && chown -R ${USER}:${USER} /home/${USER}/.jupyter
-
-# Copy and set up startup script
-COPY start-jupyter.sh /usr/local/bin/start-jupyter.sh
-RUN chmod +x /usr/local/bin/start-jupyter.sh
 
 # Expose JupyterLab port
 EXPOSE 8888
