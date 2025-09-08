@@ -24,21 +24,37 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
 
+    - name: Determine image tag
+      id: determine-tag
+      run: |
+        # Use the SHA of the triggering workflow's head commit
+        SHA=${{ github.event.workflow_run.head_sha }}
+        echo "sha=$SHA" >> $GITHUB_OUTPUT
+        echo "Using image tag: $SHA"
+
     - name: Test Docker image functionality
       run: |
         echo "Testing the built Docker image..."
-        
-        # Wait a moment to ensure the new image is fully published
-        sleep 60
-        
-        # Force pull the latest image (bypass cache)
-        docker pull --no-cache ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
-        
-        # Verify we have the latest image
-        docker image inspect ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest --format='{{.Created}}'
-        
+        TAG=${{ steps.determine-tag.outputs.sha }}
+
+        # Wait to ensure the new image is published
+        sleep 45
+
+        # Try pulling the SHA-tagged image first; fall back to latest
+        if docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${TAG}; then
+          IMAGE_TAG=${TAG}
+          echo "Pulled image with SHA tag: ${TAG}"
+        else
+          echo "SHA tag not available yet, falling back to latest"
+          docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          IMAGE_TAG=latest
+        fi
+
+        # Show image creation time
+        docker image inspect ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${IMAGE_TAG} --format='{{.Created}}'
+
         # Test basic Python functionality
-        docker run --rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest python -c "
+        docker run --rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${IMAGE_TAG} python -c "
         import sys
         print('🐍 Python version:', sys.version)
         
@@ -111,9 +127,14 @@ jobs:
     - name: Test JupyterLab startup
       run: |
         echo "Testing JupyterLab startup..."
-        
+        TAG=${{ steps.determine-tag.outputs.sha }}
+        IMAGE_TAG=${TAG}
+        if ! docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${IMAGE_TAG}; then
+          IMAGE_TAG=latest
+        fi
+
         # Start JupyterLab in background and test if it responds
-        CONTAINER_ID=$(docker run -d -p 8888:8888 ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest start-jupyter.sh)
+        CONTAINER_ID=$(docker run -d -p 8888:8888 ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${IMAGE_TAG} start-jupyter.sh)
         
         # Wait for JupyterLab to start
         sleep 30
