@@ -68,7 +68,12 @@ RUN wget http://prdownloads.sourceforge.net/ta-lib/ta-lib-0.4.0-src.tar.gz \
 
 # Ensure pip/tools are modern and install packages in one resolver pass with constraints to avoid incompatibilities
 RUN python -m pip install --upgrade --no-cache-dir pip setuptools wheel \
-    && python -m pip install --no-cache-dir \
+    # Pin PyTorch stack to match base image (CUDA 11.8)
+    && python -m pip install --no-cache-dir --index-url https://download.pytorch.org/whl/cu118 \
+        torch==2.1.0 torchvision==0.16.0 torchaudio==2.1.0 \
+    # Write constraints file to prevent accidental upgrades by downstream deps
+    && printf "torch==2.1.0\ntorchvision==0.16.0\ntorchaudio==2.1.0\n" > /tmp/constraints.txt \
+    && python -m pip install --no-cache-dir -c /tmp/constraints.txt \
         "numpy<2" \
         pandas \
         scipy \
@@ -82,10 +87,10 @@ RUN python -m pip install --upgrade --no-cache-dir pip setuptools wheel \
         nbformat \
         numba \
         packaging \
-        TA-Lib \
-        autogluon \
-        autogluon.timeseries \
-        "autogluon.tabular[all]" \
+    TA-Lib \
+    autogluon \
+    autogluon.timeseries \
+    "autogluon.tabular[all]" \
         "vectorbt<0.26" \
         transformers \
         accelerate \
