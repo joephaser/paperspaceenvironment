@@ -112,8 +112,8 @@ RUN python -m pip install --upgrade --no-cache-dir pip setuptools wheel \
 COPY start-jupyter.sh /usr/local/bin/start-jupyter.sh
 RUN chmod +x /usr/local/bin/start-jupyter.sh
 
-# Create a non-root user and workspace
-ARG USER=gradient
+# Create a non-root user and workspace (align with Gradient)
+ARG USER=paperspace
 ARG UID=1000
 RUN useradd -m -u ${UID} ${USER} || true
 WORKDIR /home/${USER}/workspace
@@ -145,5 +145,8 @@ RUN mkdir -p /home/${USER}/.jupyter \
 # Expose JupyterLab port
 EXPOSE 8888
 
-# Default workdir and command
-CMD ["bash"]
+# Basic healthcheck for Jupyter (ok if command overridden by platform)
+HEALTHCHECK --interval=30s --timeout=5s --retries=5 CMD curl -fsS http://localhost:8888/ || exit 1
+
+# Default command launches Jupyter (platforms like Gradient can override)
+CMD ["start-jupyter.sh"]
