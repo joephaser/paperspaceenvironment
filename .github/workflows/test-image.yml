@@ -17,151 +17,141 @@ jobs:
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
     
     steps:
-    - name: Log in to Container Registry
-      uses: docker/login-action@v3
-      with:
-        registry: ${{ env.REGISTRY }}
-        username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Determine image tag
-      id: determine-tag
-      run: |
-        # Use the SHA of the triggering workflow's head commit
-        SHA=${{ github.event.workflow_run.head_sha }}
-        echo "sha=$SHA" >> $GITHUB_OUTPUT
-        echo "Using image tag: $SHA"
+      - name: Determine image tag
+        id: determine-tag
+        run: |
+          # Use the SHA of the triggering workflow's head commit
+          SHA="${{ github.event.workflow_run.head_sha }}"
+          SHORT_SHA="$(echo "$SHA" | cut -c1-12)"
+          TAG="sha-${SHORT_SHA}"
+          echo "sha=$TAG" >> "$GITHUB_OUTPUT"
+          echo "Using image tag: $TAG"
 
-    - name: Test Docker image functionality
-      run: |
-        echo "Testing the built Docker image..."
-        TAG=${{ steps.determine-tag.outputs.sha }}
+      - name: Test Docker image functionality
+        run: |
+          echo "Testing the built Docker image..."
+          TAG="${{ steps.determine-tag.outputs.sha }}"
 
-        # Wait to ensure the new image is published
-        sleep 45
+          # Wait to ensure the new image is published
+          sleep 45
 
-        # Try pulling the SHA-tagged image first; fall back to latest
-        if docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${TAG}; then
-          IMAGE_TAG=${TAG}
-          echo "Pulled image with SHA tag: ${TAG}"
-        else
-          echo "SHA tag not available yet, falling back to latest"
-          docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
-          IMAGE_TAG=latest
-        fi
+          # Try pulling the SHA-tagged image first; fall back to latest
+          if docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${TAG}; then
+            IMAGE_TAG="${TAG}"
+            echo "Pulled image with SHA tag: ${TAG}"
+          else
+            echo "SHA tag not available yet, falling back to latest"
+            docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+            IMAGE_TAG="latest"
+          fi
 
-        # Show image creation time
-        docker image inspect ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${IMAGE_TAG} --format='{{.Created}}'
+          # Show image creation time
+          docker image inspect ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${IMAGE_TAG} --format='{{.Created}}'
 
-        # Test basic Python functionality
-        docker run --rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${IMAGE_TAG} python -c "
-        import sys
-        print('🐍 Python version:', sys.version)
-        
-        # Test core imports
-        print('Testing imports...')
-        
-        try:
-            import torch
-            print('✅ PyTorch imported, version:', torch.__version__)
-            print('   CUDA available:', torch.cuda.is_available())
-        except ImportError as e:
-            print('❌ PyTorch failed:', e)
-            exit(1)
-        
-        try:
-            from autogluon.timeseries import TimeSeriesPredictor
-            print('✅ AutoGluon TimeSeries imported')
-        except ImportError as e:
-            print('❌ AutoGluon TimeSeries failed:', e)
-            exit(1)
-        
-        try:
-            import vectorbt as vbt
-            print('✅ VectorBT imported, version:', vbt.__version__)
-        except ImportError as e:
-            print('❌ VectorBT failed:', e)
-            exit(1)
-        
-        try:
-            import talib
-            import numpy as np
-            test_data = np.random.randn(100).cumsum() + 100
-            sma = talib.SMA(test_data, timeperiod=20)
-            print('✅ TA-Lib imported and working')
-            print('   Available functions:', len(talib.get_functions()))
-        except ImportError as e:
-            print('❌ TA-Lib failed:', e)
-            exit(1)
-        except Exception as e:
-            print('❌ TA-Lib test failed:', e)
-            exit(1)
-        
-        try:
-            from transformers import pipeline
-            print('✅ Transformers imported')
-        except ImportError as e:
-            print('❌ Transformers failed:', e)
-            exit(1)
-        
-        try:
-            import pandas as pd
-            import numpy as np
-            import matplotlib.pyplot as plt
-            print('✅ Data science stack imported')
-            print('   NumPy version:', np.__version__)
-            # Verify we have the correct NumPy version
-            from packaging import version
-            if version.parse(np.__version__) >= version.parse('1.24.0'):
-                print('⚠️  Warning: NumPy version may be too new for VectorBT')
-            else:
-                print('✅ NumPy version is compatible with VectorBT')
-        except ImportError as e:
-            print('❌ Data science stack failed:', e)
-            exit(1)
-        
-        print('🎉 All core packages imported successfully!')
-        print('🚀 Image is ready for use!')
-        "
+          # Test basic Python functionality
+          docker run --rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${IMAGE_TAG} python -c "
+          import sys
+          print('🐍 Python version:', sys.version)
+          
+          # Test core imports
+          print('Testing imports...')
+          
+          try:
+              import torch
+              print('✅ PyTorch imported, version:', torch.__version__)
+              print('   CUDA available:', torch.cuda.is_available())
+          except ImportError as e:
+              print('❌ PyTorch failed:', e)
+              raise
+          
+          try:
+              from autogluon.timeseries import TimeSeriesPredictor
+              print('✅ AutoGluon TimeSeries imported')
+          except ImportError as e:
+              print('❌ AutoGluon TimeSeries failed:', e)
+              raise
+          
+          try:
+              import vectorbt as vbt
+              print('✅ VectorBT imported, version:', vbt.__version__)
+          except Exception as e:
+              print('❌ VectorBT failed:', e)
+              raise
+          
+          try:
+              import talib
+              import numpy as np
+              test_data = np.random.randn(100).cumsum() + 100
+              sma = talib.SMA(test_data, timeperiod=20)
+              print('✅ TA-Lib imported and working')
+              print('   Available functions:', len(talib.get_functions()))
+          except Exception as e:
+              print('❌ TA-Lib test failed:', e)
+              raise
+          
+          try:
+              from transformers import pipeline
+              print('✅ Transformers imported')
+          except Exception as e:
+              print('❌ Transformers failed:', e)
+              raise
+          
+          try:
+              import pandas as pd
+              import numpy as np
+              import matplotlib.pyplot as plt
+              print('✅ Data science stack imported')
+              print('   NumPy version:', np.__version__)
+              from packaging import version
+              if version.parse(np.__version__) >= version.parse('2.0.0'):
+                  print('⚠️  Warning: NumPy 2 detected')
+              else:
+                  print('✅ NumPy version is compatible')
+          except Exception as e:
+              print('❌ Data science stack failed:', e)
+              raise
+          "
 
-    - name: Test JupyterLab startup
-      run: |
-        echo "Testing JupyterLab startup..."
-        TAG=${{ steps.determine-tag.outputs.sha }}
-        IMAGE_TAG=${TAG}
-        if ! docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${IMAGE_TAG}; then
-          IMAGE_TAG=latest
-        fi
+      - name: Test JupyterLab startup
+        run: |
+          echo "Testing JupyterLab startup..."
+          TAG="${{ steps.determine-tag.outputs.sha }}"
+          IMAGE_TAG="${TAG}"
+          if ! docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${IMAGE_TAG}; then
+            IMAGE_TAG="latest"
+          fi
 
-        # Start JupyterLab in background and test if it responds
-        CONTAINER_ID=$(docker run -d -p 8888:8888 ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${IMAGE_TAG} start-jupyter.sh)
-        
-        # Wait for JupyterLab to start
-        sleep 30
-        
-        # Check if JupyterLab is responding
-        if curl -f http://localhost:8888 >/dev/null 2>&1; then
-          echo "✅ JupyterLab started successfully"
-        else
-          echo "❌ JupyterLab failed to start"
-          docker logs $CONTAINER_ID
-          exit 1
-        fi
-        
-        # Cleanup
-        docker stop $CONTAINER_ID
-        docker rm $CONTAINER_ID
+          CONTAINER_ID=$(docker run -d -p 8888:8888 ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${IMAGE_TAG} start-jupyter.sh)
+          sleep 30
 
-    - name: Create test summary
-      run: |
-        echo "## 🧪 Test Results" >> $GITHUB_STEP_SUMMARY
-        echo "| Component | Status |" >> $GITHUB_STEP_SUMMARY
-        echo "|-----------|--------|" >> $GITHUB_STEP_SUMMARY
-        echo "| PyTorch | ✅ |" >> $GITHUB_STEP_SUMMARY
-        echo "| AutoGluon | ✅ |" >> $GITHUB_STEP_SUMMARY
-        echo "| VectorBT | ✅ |" >> $GITHUB_STEP_SUMMARY
-        echo "| TA-Lib | ✅ |" >> $GITHUB_STEP_SUMMARY
-        echo "| Transformers | ✅ |" >> $GITHUB_STEP_SUMMARY
-        echo "| JupyterLab | ✅ |" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "🎉 **All tests passed!** The Docker image is ready for use." >> $GITHUB_STEP_SUMMARY
+          if curl -f http://localhost:8888 >/dev/null 2>&1; then
+            echo "✅ JupyterLab started successfully"
+          else
+            echo "❌ JupyterLab failed to start"
+            docker logs "$CONTAINER_ID"
+            exit 1
+          fi
+
+          docker stop "$CONTAINER_ID"
+          docker rm "$CONTAINER_ID"
+
+      - name: Create test summary
+        run: |
+          echo "## 🧪 Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "| Component | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| PyTorch | ✅ |" >> $GITHUB_STEP_SUMMARY
+          echo "| AutoGluon | ✅ |" >> $GITHUB_STEP_SUMMARY
+          echo "| VectorBT | ✅ |" >> $GITHUB_STEP_SUMMARY
+          echo "| TA-Lib | ✅ |" >> $GITHUB_STEP_SUMMARY
+          echo "| Transformers | ✅ |" >> $GITHUB_STEP_SUMMARY
+          echo "| JupyterLab | ✅ |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "🎉 **All tests passed!** The Docker image is ready for use." >> $GITHUB_STEP_SUMMARY

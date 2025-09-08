@@ -75,7 +75,7 @@ RUN python -m pip install --upgrade --no-cache-dir pip setuptools wheel \
         scikit-learn \
         matplotlib \
         seaborn \
-        plotly \
+    "plotly<5" \
         jupyterlab \
         jupyter \
         ipywidgets \
