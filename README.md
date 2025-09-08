@@ -8,7 +8,7 @@ This Docker environment provides a complete setup for time series analysis, mach
 
 ## Features
 
-- **CUDA 11.8 + cuDNN 8** for GPU acceleration
+- **PyTorch 2.1.0 with CUDA 11.8 + cuDNN 8** for GPU acceleration
 - **AutoGluon** for time series prediction and tabular ML
 - **Hugging Face Transformers** for running pre-trained models
 - **VectorBT** for financial backtesting and analysis
@@ -110,7 +110,7 @@ gradient notebooks create \
 ## Environment Configuration
 
 ### CUDA/GPU
-The environment is configured for CUDA 11.8. Ensure your Paperspace machine has compatible drivers.
+The environment is configured for CUDA 11.8 with PyTorch 2.1.0. Ensure your Paperspace machine has compatible drivers.
 
 ### Hugging Face
 - Models cache to `/home/tradelab/.cache/huggingface/`

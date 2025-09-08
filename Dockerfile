@@ -1,14 +1,14 @@
 
-# Use NVIDIA CUDA runtime base image so container has CUDA & cuDNN available for Paperspace
-# Using CUDA 11.8 with cuDNN 8 on Ubuntu 22.04 for proven compatibility with AutoGluon
-FROM nvidia/cuda:11.8-cudnn8-runtime-ubuntu22.04
+# Use PyTorch official image with CUDA support as base - this is guaranteed to work
+# PyTorch images are well-maintained and include CUDA + cuDNN
+FROM pytorch/pytorch:2.1.0-cuda11.8-cudnn8-runtime
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV CUDA_VERSION=11.8
 ENV CUDNN_VERSION=8
 
 LABEL maintainer="github.com/joephaser/paperspaceenvironment"
-LABEL description="Ubuntu 22.04 LTS with CUDA 11.8 + cuDNN 8 runtime, Python and AutoGluon for Paperspace GPU usage"
+LABEL description="PyTorch base with CUDA 11.8 + cuDNN 8, Python and AutoGluon for Paperspace GPU usage"
 LABEL version="1.0.0"
 LABEL org.opencontainers.image.source="https://github.com/joephaser/paperspaceenvironment"
 LABEL org.opencontainers.image.description="Complete ML environment for AutoGluon, Hugging Face, and VectorBT on Paperspace Gradient"
@@ -24,9 +24,6 @@ RUN apt-get update \
         build-essential \
         pkg-config \
         software-properties-common \
-        python3 \
-        python3-venv \
-        python3-pip \
         python3-dev \
         cmake \
         libglib2.0-0 \
@@ -58,10 +55,10 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 # Ensure pip/tools are modern and install the latest stable Autogluon and other Python packages
-RUN python3 -m pip install --upgrade pip setuptools wheel
+RUN python -m pip install --upgrade pip setuptools wheel
 
 # Install core data science and ML packages
-RUN python3 -m pip install --no-cache-dir \
+RUN python -m pip install --no-cache-dir \
         numpy \
         pandas \
         scipy \
@@ -75,19 +72,19 @@ RUN python3 -m pip install --no-cache-dir \
         nbformat
 
 # Install AutoGluon with GPU support for time series
-RUN python3 -m pip install --no-cache-dir \
+RUN python -m pip install --no-cache-dir \
         autogluon \
         autogluon.timeseries \
         autogluon.tabular[all]
 
 # Install VectorBT and its dependencies
-RUN python3 -m pip install --no-cache-dir \
+RUN python -m pip install --no-cache-dir \
         vectorbt \
         numba \
         talib-binary
 
 # Install Hugging Face / transformers stack for running models locally
-RUN python3 -m pip install --no-cache-dir \
+RUN python -m pip install --no-cache-dir \
         transformers \
         accelerate \
         huggingface-hub \
@@ -95,13 +92,10 @@ RUN python3 -m pip install --no-cache-dir \
         sentencepiece \
         tokenizers \
         safetensors \
-        bitsandbytes \
-        torch \
-        torchvision \
-        torchaudio
+        bitsandbytes
 
 # Install additional time series and financial analysis tools
-RUN python3 -m pip install --no-cache-dir \
+RUN python -m pip install --no-cache-dir \
         statsmodels \
         pmdarima \
         yfinance \

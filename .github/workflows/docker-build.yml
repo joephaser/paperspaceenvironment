@@ -70,14 +70,15 @@ jobs:
     - name: Test Docker image
       if: github.event_name == 'pull_request'
       run: |
-        docker run --rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.tags }} python3 -c "
+        docker run --rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.tags }} python -c "
         import sys
         print('Python version:', sys.version)
         
         # Test core imports
         try:
             import torch
-            print('✅ PyTorch imported')
+            print('✅ PyTorch imported, version:', torch.__version__)
+            print('CUDA available:', torch.cuda.is_available())
         except ImportError as e:
             print('❌ PyTorch failed:', e)
             sys.exit(1)
