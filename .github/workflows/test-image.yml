@@ -62,6 +62,20 @@ jobs:
             exit(1)
         
         try:
+            import talib
+            import numpy as np
+            test_data = np.random.randn(100).cumsum() + 100
+            sma = talib.SMA(test_data, timeperiod=20)
+            print('✅ TA-Lib imported and working')
+            print('   Available functions:', len(talib.get_functions()))
+        except ImportError as e:
+            print('❌ TA-Lib failed:', e)
+            exit(1)
+        except Exception as e:
+            print('❌ TA-Lib test failed:', e)
+            exit(1)
+        
+        try:
             from transformers import pipeline
             print('✅ Transformers imported')
         except ImportError as e:
@@ -112,6 +126,7 @@ jobs:
         echo "| PyTorch | ✅ |" >> $GITHUB_STEP_SUMMARY
         echo "| AutoGluon | ✅ |" >> $GITHUB_STEP_SUMMARY
         echo "| VectorBT | ✅ |" >> $GITHUB_STEP_SUMMARY
+        echo "| TA-Lib | ✅ |" >> $GITHUB_STEP_SUMMARY
         echo "| Transformers | ✅ |" >> $GITHUB_STEP_SUMMARY
         echo "| JupyterLab | ✅ |" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY

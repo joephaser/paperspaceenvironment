@@ -108,7 +108,7 @@ gradient notebooks create \
 - VectorBT (backtesting framework)
 - yfinance (market data)
 - QuantLib (quantitative finance)
-- TA-Lib (technical analysis)
+- TA-Lib (technical analysis indicators)
 
 ### Time Series Specific
 - statsmodels
@@ -153,6 +153,20 @@ data = yf.download("AAPL", start="2020-01-01", end="2023-01-01")
 entries = data['Close'].rolling(50).mean() > data['Close'].rolling(200).mean()
 portfolio = vbt.Portfolio.from_signals(data['Close'], entries, exits=~entries)
 print(portfolio.stats())
+```
+
+### TA-Lib Technical Analysis
+```python
+import talib
+import numpy as np
+
+# Calculate technical indicators
+close_prices = np.array([100, 102, 101, 103, 105, 104, 106])
+sma = talib.SMA(close_prices, timeperiod=5)
+rsi = talib.RSI(close_prices, timeperiod=5)
+macd, signal, hist = talib.MACD(close_prices)
+
+print(f"Available indicators: {len(talib.get_functions())}")
 ```
 
 ### Hugging Face Models

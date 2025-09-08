@@ -55,6 +55,17 @@ RUN apt-get update \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
+# Install TA-Lib C library from source
+RUN wget http://prdownloads.sourceforge.net/ta-lib/ta-lib-0.4.0-src.tar.gz \
+    && tar -xzf ta-lib-0.4.0-src.tar.gz \
+    && cd ta-lib/ \
+    && ./configure --prefix=/usr \
+    && make \
+    && make install \
+    && cd .. \
+    && rm -rf ta-lib ta-lib-0.4.0-src.tar.gz \
+    && ldconfig
+
 # Ensure pip/tools are modern and install packages in combined layers to save space
 RUN python -m pip install --upgrade --no-cache-dir pip setuptools wheel \
     && python -m pip install --no-cache-dir \
@@ -69,12 +80,13 @@ RUN python -m pip install --upgrade --no-cache-dir pip setuptools wheel \
         jupyter \
         ipywidgets \
         nbformat \
+        numba \
+    && python -m pip install --no-cache-dir \
+        TA-Lib \
         autogluon \
         autogluon.timeseries \
         autogluon.tabular[all] \
         vectorbt \
-        numba \
-        talib-binary \
         transformers \
         accelerate \
         huggingface-hub \
