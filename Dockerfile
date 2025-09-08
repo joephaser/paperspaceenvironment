@@ -1,16 +1,16 @@
 
 # Use NVIDIA CUDA runtime base image so container has CUDA & cuDNN available for Paperspace
-# Picking CUDA 12.4 and cuDNN 8 to match recent Autogluon GPU requirements (host must provide NVIDIA drivers)
-FROM nvidia/cuda:12.4.0-cudnn8-runtime-ubuntu24.04
+# Using CUDA 11.8 with cuDNN 8 on Ubuntu 22.04 for proven compatibility with AutoGluon
+FROM nvidia/cuda:11.8-cudnn8-runtime-ubuntu22.04
 
 ENV DEBIAN_FRONTEND=noninteractive
-ENV CUDA_VERSION=12.4
+ENV CUDA_VERSION=11.8
 ENV CUDNN_VERSION=8
 
-LABEL maintainer="github.com/yourusername/paperspace-autogluon-env"
-LABEL description="Ubuntu 24.04 LTS with CUDA 12.4 + cuDNN 8 runtime, Python and AutoGluon for Paperspace GPU usage"
+LABEL maintainer="github.com/joephaser/paperspaceenvironment"
+LABEL description="Ubuntu 22.04 LTS with CUDA 11.8 + cuDNN 8 runtime, Python and AutoGluon for Paperspace GPU usage"
 LABEL version="1.0.0"
-LABEL org.opencontainers.image.source="https://github.com/yourusername/paperspace-autogluon-env"
+LABEL org.opencontainers.image.source="https://github.com/joephaser/paperspaceenvironment"
 LABEL org.opencontainers.image.description="Complete ML environment for AutoGluon, Hugging Face, and VectorBT on Paperspace Gradient"
 LABEL org.opencontainers.image.licenses="MIT"
 

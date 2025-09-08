@@ -1,14 +1,14 @@
 # Paperspace Gradient Environment for AutoGluon + Hugging Face + VectorBT
 
-[![Docker Build](https://github.com/yourusername/paperspace-autogluon-env/actions/workflows/docker-build.yml/badge.svg)](https://github.com/yourusername/paperspace-autogluon-env/actions/workflows/docker-build.yml)
+[![Docker Build](https://github.com/joephaser/paperspaceenvironment/actions/workflows/docker-build.yml/badge.svg)](https://github.com/joephaser/paperspaceenvironment/actions/workflows/docker-build.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Docker Pulls](https://img.shields.io/docker/pulls/ghcr.io/yourusername/paperspace-autogluon-env)](https://github.com/yourusername/paperspace-autogluon-env/pkgs/container/paperspace-autogluon-env)
+[![Docker Pulls](https://img.shields.io/docker/pulls/ghcr.io/joephaser/paperspaceenvironment)](https://github.com/joephaser/paperspaceenvironment/pkgs/container/paperspaceenvironment)
 
 This Docker environment provides a complete setup for time series analysis, machine learning, and financial backtesting on Paperspace Gradient.
 
 ## Features
 
-- **CUDA 12.4 + cuDNN 8** for GPU acceleration
+- **CUDA 11.8 + cuDNN 8** for GPU acceleration
 - **AutoGluon** for time series prediction and tabular ML
 - **Hugging Face Transformers** for running pre-trained models
 - **VectorBT** for financial backtesting and analysis
@@ -23,10 +23,10 @@ The easiest way to get started is using our pre-built image from GitHub Containe
 
 ```bash
 # Pull the latest image
-docker pull ghcr.io/yourusername/paperspace-autogluon-env:latest
+docker pull ghcr.io/joephaser/paperspaceenvironment:latest
 
 # Run locally with GPU support
-docker run -it --gpus all -p 8888:8888 ghcr.io/yourusername/paperspace-autogluon-env:latest
+docker run -it --gpus all -p 8888:8888 ghcr.io/joephaser/paperspaceenvironment:latest
 
 # Start JupyterLab
 start-jupyter.sh
@@ -36,8 +36,8 @@ start-jupyter.sh
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/paperspace-autogluon-env.git
-cd paperspace-autogluon-env
+git clone https://github.com/joephaser/paperspaceenvironment.git
+cd paperspaceenvironment
 
 # Build the image
 docker build -t paperspace-autogluon .
@@ -52,8 +52,8 @@ For local development with persistent volumes:
 
 ```bash
 # Clone and start with Docker Compose
-git clone https://github.com/yourusername/paperspace-autogluon-env.git
-cd paperspace-autogluon-env
+git clone https://github.com/joephaser/paperspaceenvironment.git
+cd paperspaceenvironment
 
 # Start the environment
 docker-compose up
@@ -69,7 +69,7 @@ This will:
 ### Using on Paperspace Gradient
 
 1. Create a new Gradient notebook
-2. Use the custom container: `ghcr.io/yourusername/paperspace-autogluon-env:latest`
+2. Use the custom container: `ghcr.io/joephaser/paperspaceenvironment:latest`
 3. JupyterLab will be available automatically
 4. Or use the Paperspace CLI:
 
@@ -78,7 +78,7 @@ gradient notebooks create \
   --name "AutoGluon Environment" \
   --projectId your-project-id \
   --machineType P4000 \
-  --container ghcr.io/yourusername/paperspace-autogluon-env:latest
+  --container ghcr.io/joephaser/paperspaceenvironment:latest
 ```
 
 ## Included Packages
@@ -110,7 +110,7 @@ gradient notebooks create \
 ## Environment Configuration
 
 ### CUDA/GPU
-The environment is configured for CUDA 12.4. Ensure your Paperspace machine has compatible drivers.
+The environment is configured for CUDA 11.8. Ensure your Paperspace machine has compatible drivers.
 
 ### Hugging Face
 - Models cache to `/home/tradelab/.cache/huggingface/`
@@ -171,7 +171,7 @@ This will verify all major components are working correctly.
 
 ### GPU Issues
 - Check CUDA availability: `torch.cuda.is_available()`
-- Verify driver compatibility with CUDA 12.4
+- Verify driver compatibility with CUDA 11.8
 
 ### Memory Issues
 - Monitor GPU memory: `nvidia-smi`
@@ -216,7 +216,7 @@ Contributions are welcome! Please feel free to submit a Pull Request. For major 
 
 ### Reporting Issues
 
-If you encounter any issues or have suggestions for improvements, please [open an issue](https://github.com/yourusername/paperspace-autogluon-env/issues) on GitHub.
+If you encounter any issues or have suggestions for improvements, please [open an issue](https://github.com/joephaser/paperspaceenvironment/issues) on GitHub.
 
 ## Acknowledgments
 
@@ -227,4 +227,4 @@ If you encounter any issues or have suggestions for improvements, please [open a
 
 ## Star History
 
-[![Star History Chart](https://api.star-history.com/svg?repos=yourusername/paperspace-autogluon-env&type=Date)](https://star-history.com/#yourusername/paperspace-autogluon-env&Date)
+[![Star History Chart](https://api.star-history.com/svg?repos=joephaser/paperspaceenvironment&type=Date)](https://star-history.com/#joephaser/paperspaceenvironment&Date)
