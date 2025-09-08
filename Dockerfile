@@ -69,7 +69,7 @@ RUN wget http://prdownloads.sourceforge.net/ta-lib/ta-lib-0.4.0-src.tar.gz \
 # Ensure pip/tools are modern and install packages in combined layers to save space
 RUN python -m pip install --upgrade --no-cache-dir pip setuptools wheel \
     && python -m pip install --no-cache-dir \
-        numpy \
+        "numpy<1.24" \
         pandas \
         scipy \
         scikit-learn \
@@ -86,7 +86,7 @@ RUN python -m pip install --upgrade --no-cache-dir pip setuptools wheel \
         autogluon \
         autogluon.timeseries \
         autogluon.tabular[all] \
-        vectorbt \
+        "vectorbt>=0.25.0" \
         transformers \
         accelerate \
         huggingface-hub \
