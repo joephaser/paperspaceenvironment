@@ -66,10 +66,10 @@ RUN wget http://prdownloads.sourceforge.net/ta-lib/ta-lib-0.4.0-src.tar.gz \
     && rm -rf ta-lib ta-lib-0.4.0-src.tar.gz \
     && ldconfig
 
-# Ensure pip/tools are modern and install packages in combined layers to save space
+# Ensure pip/tools are modern and install packages in one resolver pass with constraints to avoid incompatibilities
 RUN python -m pip install --upgrade --no-cache-dir pip setuptools wheel \
     && python -m pip install --no-cache-dir \
-        "numpy<1.24" \
+        "numpy<2" \
         pandas \
         scipy \
         scikit-learn \
@@ -82,12 +82,11 @@ RUN python -m pip install --upgrade --no-cache-dir pip setuptools wheel \
         nbformat \
         numba \
         packaging \
-    && python -m pip install --no-cache-dir \
         TA-Lib \
         autogluon \
         autogluon.timeseries \
-        autogluon.tabular[all] \
-        "vectorbt>=0.25.0" \
+        "autogluon.tabular[all]" \
+        "vectorbt<0.26" \
         transformers \
         accelerate \
         huggingface-hub \
@@ -101,6 +100,7 @@ RUN python -m pip install --upgrade --no-cache-dir pip setuptools wheel \
         yfinance \
         alpha-vantage \
         quantlib \
+    && python -m pip check \
     && python -m pip cache purge
 
 # Copy and set up startup script (must be done as root before user switch)
