@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  paperspace-env:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: paperspace-autogluon:latest
+    container_name: paperspace-autogluon-dev
+    ports:
+      - "8888:8888"
+    volumes:
+      - ./notebooks:/home/gradient/workspace/notebooks
+      - ./data:/home/gradient/workspace/data
+      - gradient-cache:/home/gradient/.cache
+    environment:
+      - JUPYTER_ENABLE_LAB=yes
+      - HF_HUB_DISABLE_TELEMETRY=1
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    command: start-jupyter.sh
+
+volumes:
+  gradient-cache:
+    driver: local

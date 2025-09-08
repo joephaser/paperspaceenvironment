@@ -1,0 +1,129 @@
+name: Build and Push Docker Image
+
+on:
+  push:
+    branches: [ main, develop ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    # Rebuild weekly to get latest base image updates
+    - cron: '0 2 * * 0'
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Log in to Container Registry
+      if: github.event_name != 'pull_request'
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Extract metadata
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+        tags: |
+          type=ref,event=branch
+          type=ref,event=pr
+          type=semver,pattern={{version}}
+          type=semver,pattern={{major}}.{{minor}}
+          type=semver,pattern={{major}}
+          type=raw,value=latest,enable={{is_default_branch}}
+          type=schedule,pattern={{date 'YYYYMMDD'}}
+        labels: |
+          org.opencontainers.image.title=Paperspace AutoGluon Environment
+          org.opencontainers.image.description=Complete ML environment for AutoGluon, Hugging Face, and VectorBT on Paperspace Gradient
+          org.opencontainers.image.vendor=${{ github.repository_owner }}
+
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        platforms: linux/amd64
+        push: ${{ github.event_name != 'pull_request' }}
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+        build-args: |
+          BUILDKIT_INLINE_CACHE=1
+
+    - name: Test Docker image
+      if: github.event_name == 'pull_request'
+      run: |
+        docker run --rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.tags }} python3 -c "
+        import sys
+        print('Python version:', sys.version)
+        
+        # Test core imports
+        try:
+            import torch
+            print('✅ PyTorch imported')
+        except ImportError as e:
+            print('❌ PyTorch failed:', e)
+            sys.exit(1)
+        
+        try:
+            from autogluon.timeseries import TimeSeriesPredictor
+            print('✅ AutoGluon TimeSeries imported')
+        except ImportError as e:
+            print('❌ AutoGluon TimeSeries failed:', e)
+            sys.exit(1)
+        
+        try:
+            import vectorbt as vbt
+            print('✅ VectorBT imported')
+        except ImportError as e:
+            print('❌ VectorBT failed:', e)
+            sys.exit(1)
+        
+        try:
+            from transformers import pipeline
+            print('✅ Transformers imported')
+        except ImportError as e:
+            print('❌ Transformers failed:', e)
+            sys.exit(1)
+        
+        print('🎉 All core packages imported successfully')
+        "
+
+  security-scan:
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    if: github.event_name != 'pull_request'
+    permissions:
+      contents: read
+      security-events: write
+
+    steps:
+    - name: Run Trivy vulnerability scanner
+      uses: aquasecurity/trivy-action@master
+      with:
+        image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+
+    - name: Upload Trivy scan results to GitHub Security tab
+      uses: github/codeql-action/upload-sarif@v2
+      if: always()
+      with:
+        sarif_file: 'trivy-results.sarif'
