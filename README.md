@@ -32,6 +32,8 @@ docker run -it --gpus all -p 8888:8888 ghcr.io/joephaser/paperspaceenvironment:l
 start-jupyter.sh
 ```
 
+> **Note**: Images are built using GitHub Actions with optimized caching and space management to handle the large ML dependencies.
+
 ### Building from Source
 
 ```bash
@@ -39,12 +41,17 @@ start-jupyter.sh
 git clone https://github.com/joephaser/paperspaceenvironment.git
 cd paperspaceenvironment
 
-# Build the image
+# Build the image (requires significant disk space)
 docker build -t paperspace-autogluon .
+
+# Or use the multi-stage build for smaller final image
+docker build -f Dockerfile.multistage -t paperspace-autogluon .
 
 # Run the container
 docker run -it --gpus all -p 8888:8888 paperspace-autogluon
 ```
+
+> **Warning**: Local builds require ~15-20GB of disk space due to ML dependencies. Consider using the pre-built image instead.
 
 ### Using Docker Compose (Development)
 
@@ -181,6 +188,27 @@ This will verify all major components are working correctly.
 ### Package Conflicts
 - The environment uses latest stable versions
 - For specific versions, modify the Dockerfile pip install commands
+
+### Build Issues (Local Development)
+- **Disk Space**: Local builds require ~15-20GB of free space
+- **Memory**: Recommend 16GB+ RAM for building
+- **Solution**: Use pre-built images from GitHub Container Registry instead
+
+## Docker Image Optimization
+
+This repository uses several optimizations to manage the large size of ML dependencies:
+
+### GitHub Actions Optimizations
+- **Remote Building**: Uses Docker Buildx to build remotely and push directly to registry
+- **Disk Cleanup**: Frees up GitHub runner disk space before building
+- **Layer Caching**: Aggressive caching to speed up subsequent builds
+- **Combined RUN Commands**: Reduces intermediate layer size
+
+### Dockerfile Optimizations
+- **Single RUN Layer**: All pip installs combined into one layer
+- **Cache Purging**: Removes pip cache after installation
+- **Minimal Base**: PyTorch base image instead of full CUDA image
+- **Multi-stage Option**: Available in `Dockerfile.multistage` for even smaller images
 
 ## Customization
 

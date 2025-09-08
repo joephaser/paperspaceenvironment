@@ -1,0 +1,118 @@
+name: Test Docker Image
+
+on:
+  workflow_run:
+    workflows: ["Build and Push Docker Image"]
+    types:
+      - completed
+    branches: [main]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  test-image:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    
+    steps:
+    - name: Log in to Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Test Docker image functionality
+      run: |
+        echo "Testing the built Docker image..."
+        
+        # Pull the latest image
+        docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+        
+        # Test basic Python functionality
+        docker run --rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest python -c "
+        import sys
+        print('🐍 Python version:', sys.version)
+        
+        # Test core imports
+        print('Testing imports...')
+        
+        try:
+            import torch
+            print('✅ PyTorch imported, version:', torch.__version__)
+            print('   CUDA available:', torch.cuda.is_available())
+        except ImportError as e:
+            print('❌ PyTorch failed:', e)
+            exit(1)
+        
+        try:
+            from autogluon.timeseries import TimeSeriesPredictor
+            print('✅ AutoGluon TimeSeries imported')
+        except ImportError as e:
+            print('❌ AutoGluon TimeSeries failed:', e)
+            exit(1)
+        
+        try:
+            import vectorbt as vbt
+            print('✅ VectorBT imported, version:', vbt.__version__)
+        except ImportError as e:
+            print('❌ VectorBT failed:', e)
+            exit(1)
+        
+        try:
+            from transformers import pipeline
+            print('✅ Transformers imported')
+        except ImportError as e:
+            print('❌ Transformers failed:', e)
+            exit(1)
+        
+        try:
+            import pandas as pd
+            import numpy as np
+            import matplotlib.pyplot as plt
+            print('✅ Data science stack imported')
+        except ImportError as e:
+            print('❌ Data science stack failed:', e)
+            exit(1)
+        
+        print('🎉 All core packages imported successfully!')
+        print('🚀 Image is ready for use!')
+        "
+
+    - name: Test JupyterLab startup
+      run: |
+        echo "Testing JupyterLab startup..."
+        
+        # Start JupyterLab in background and test if it responds
+        CONTAINER_ID=$(docker run -d -p 8888:8888 ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest start-jupyter.sh)
+        
+        # Wait for JupyterLab to start
+        sleep 30
+        
+        # Check if JupyterLab is responding
+        if curl -f http://localhost:8888 >/dev/null 2>&1; then
+          echo "✅ JupyterLab started successfully"
+        else
+          echo "❌ JupyterLab failed to start"
+          docker logs $CONTAINER_ID
+          exit 1
+        fi
+        
+        # Cleanup
+        docker stop $CONTAINER_ID
+        docker rm $CONTAINER_ID
+
+    - name: Create test summary
+      run: |
+        echo "## 🧪 Test Results" >> $GITHUB_STEP_SUMMARY
+        echo "| Component | Status |" >> $GITHUB_STEP_SUMMARY
+        echo "|-----------|--------|" >> $GITHUB_STEP_SUMMARY
+        echo "| PyTorch | ✅ |" >> $GITHUB_STEP_SUMMARY
+        echo "| AutoGluon | ✅ |" >> $GITHUB_STEP_SUMMARY
+        echo "| VectorBT | ✅ |" >> $GITHUB_STEP_SUMMARY
+        echo "| Transformers | ✅ |" >> $GITHUB_STEP_SUMMARY
+        echo "| JupyterLab | ✅ |" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "🎉 **All tests passed!** The Docker image is ready for use." >> $GITHUB_STEP_SUMMARY

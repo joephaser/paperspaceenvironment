@@ -1,61 +1,27 @@
+# Multi-stage Dockerfile for even smaller final image
+# Use this if the single-stage build is still too large
 
-# Use PyTorch official image with CUDA support as base - this is guaranteed to work
-# PyTorch images are well-maintained and include CUDA + cuDNN
-FROM pytorch/pytorch:2.1.0-cuda11.8-cudnn8-runtime
+# Build stage - includes build tools
+FROM pytorch/pytorch:2.1.0-cuda11.8-cudnn8-runtime AS builder
 
 ENV DEBIAN_FRONTEND=noninteractive
-ENV CUDA_VERSION=11.8
-ENV CUDNN_VERSION=8
 
-LABEL maintainer="github.com/joephaser/paperspaceenvironment"
-LABEL description="PyTorch base with CUDA 11.8 + cuDNN 8, Python and AutoGluon for Paperspace GPU usage"
-LABEL version="1.0.0"
-LABEL org.opencontainers.image.source="https://github.com/joephaser/paperspaceenvironment"
-LABEL org.opencontainers.image.description="Complete ML environment for AutoGluon, Hugging Face, and VectorBT on Paperspace Gradient"
-LABEL org.opencontainers.image.licenses="MIT"
-
+# Install build dependencies
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
-        ca-certificates \
+        build-essential \
+        cmake \
+        git \
         wget \
         curl \
-        git \
-        git-lfs \
-        build-essential \
         pkg-config \
-        software-properties-common \
-        python3-dev \
-        cmake \
-        libglib2.0-0 \
-        libsm6 \
-        libxrender1 \
-        libxext6 \
-        libsndfile1 \
-        ffmpeg \
-        libcurl4-openssl-dev \
-        libomp-dev \
         libssl-dev \
         libffi-dev \
-        libxml2-dev \
-        libxslt1-dev \
-        zlib1g-dev \
-        libjpeg-dev \
-        libpng-dev \
-        libfreetype6-dev \
-        libblas-dev \
-        liblapack-dev \
-        gfortran \
-        libhdf5-dev \
-        libnetcdf-dev \
-        unzip \
-        vim \
-        nano \
-        htop \
-        tree \
+        python3-dev \
     && apt-get clean \
-    && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+    && rm -rf /var/lib/apt/lists/*
 
-# Ensure pip/tools are modern and install packages in combined layers to save space
+# Install Python packages
 RUN python -m pip install --upgrade --no-cache-dir pip setuptools wheel \
     && python -m pip install --no-cache-dir \
         numpy \
@@ -89,6 +55,45 @@ RUN python -m pip install --upgrade --no-cache-dir pip setuptools wheel \
         alpha-vantage \
         quantlib \
     && python -m pip cache purge
+
+# Runtime stage - minimal runtime dependencies
+FROM pytorch/pytorch:2.1.0-cuda11.8-cudnn8-runtime AS runtime
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV CUDA_VERSION=11.8
+ENV CUDNN_VERSION=8
+
+LABEL maintainer="github.com/joephaser/paperspaceenvironment"
+LABEL description="PyTorch base with CUDA 11.8 + cuDNN 8, Python and AutoGluon for Paperspace GPU usage"
+LABEL version="1.0.0"
+LABEL org.opencontainers.image.source="https://github.com/joephaser/paperspaceenvironment"
+LABEL org.opencontainers.image.description="Complete ML environment for AutoGluon, Hugging Face, and VectorBT on Paperspace Gradient"
+LABEL org.opencontainers.image.licenses="MIT"
+
+# Install only runtime dependencies
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        ca-certificates \
+        wget \
+        curl \
+        git \
+        git-lfs \
+        libglib2.0-0 \
+        libsm6 \
+        libxrender1 \
+        libxext6 \
+        libsndfile1 \
+        ffmpeg \
+        libcurl4-openssl-dev \
+        libomp-dev \
+        vim \
+        nano \
+        htop \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+# Copy installed packages from builder stage
+COPY --from=builder /opt/conda /opt/conda
 
 # Create a non-root user and workspace
 ARG USER=gradient
