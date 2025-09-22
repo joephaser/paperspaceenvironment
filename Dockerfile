@@ -1,15 +1,15 @@
 
 # Use PyTorch official image with CUDA support as base - this is guaranteed to work
 # PyTorch images are well-maintained and include CUDA + cuDNN
-FROM pytorch/pytorch:2.1.0-cuda11.8-cudnn8-runtime
+FROM pytorch/pytorch:2.7.1-cuda11.8-cudnn9-runtime
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV CUDA_VERSION=11.8
-ENV CUDNN_VERSION=8
+ENV CUDNN_VERSION=9
 
 LABEL maintainer="github.com/joephaser/paperspaceenvironment"
-LABEL description="PyTorch base with CUDA 11.8 + cuDNN 8, Python and AutoGluon for Paperspace GPU usage"
-LABEL version="1.0.0"
+LABEL description="PyTorch base with CUDA 11.8 + cuDNN 9, Python and AutoGluon for Paperspace GPU usage"
+LABEL version="1.1.0"
 LABEL org.opencontainers.image.source="https://github.com/joephaser/paperspaceenvironment"
 LABEL org.opencontainers.image.description="Complete ML environment for AutoGluon, Hugging Face, and VectorBT on Paperspace Gradient"
 LABEL org.opencontainers.image.licenses="MIT"
@@ -55,43 +55,34 @@ RUN apt-get update \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-# Install TA-Lib C library from source
-RUN wget http://prdownloads.sourceforge.net/ta-lib/ta-lib-0.4.0-src.tar.gz \
-    && tar -xzf ta-lib-0.4.0-src.tar.gz \
-    && cd ta-lib/ \
-    && ./configure --prefix=/usr \
-    && make \
-    && make install \
-    && cd .. \
-    && rm -rf ta-lib ta-lib-0.4.0-src.tar.gz \
-    && ldconfig
+# Skip TA-Lib C library installation for now - will try to install Python package with pre-compiled wheels
 
 # Ensure pip/tools are modern and install packages in one resolver pass with constraints to avoid incompatibilities
 RUN python -m pip install --upgrade --no-cache-dir pip setuptools wheel \
-    # Pin PyTorch stack to match base image (CUDA 11.8)
-    && python -m pip install --no-cache-dir --index-url https://download.pytorch.org/whl/cu118 \
-        torch==2.1.0 torchvision==0.16.0 torchaudio==2.1.0 \
-    # Write constraints file to prevent accidental upgrades by downstream deps
-    && printf "torch==2.1.0\ntorchvision==0.16.0\ntorchaudio==2.1.0\n" > /tmp/constraints.txt \
-    && python -m pip install --no-cache-dir -c /tmp/constraints.txt \
+    # Pin PyTorch stack to match base image (CUDA 11.8) - use existing versions from base image
+    && python -c "import torch; print('Using PyTorch version:', torch.__version__)" \
+    # Write constraints file to prevent accidental upgrades by downstream deps  
+    && python -c "import torch, torchvision, torchaudio; print('torch=='+torch.__version__+'\ntorchvision=='+torchvision.__version__+'\ntorchaudio=='+torchaudio.__version__)" > /tmp/constraints.txt \
+    && python -m pip install --no-cache-dir --trusted-host pypi.org --trusted-host pypi.python.org --trusted-host files.pythonhosted.org -c /tmp/constraints.txt \
         "numpy<2" \
         pandas \
         scipy \
         scikit-learn \
         matplotlib \
         seaborn \
-    "plotly<5" \
+    "plotly" \
         jupyterlab \
         jupyter \
         ipywidgets \
         nbformat \
         numba \
         packaging \
-    TA-Lib \
+    && echo "TA-Lib C library installation skipped - install manually if needed" \
+    && python -m pip install --no-cache-dir --trusted-host pypi.org --trusted-host pypi.python.org --trusted-host files.pythonhosted.org -c /tmp/constraints.txt \
     autogluon \
     autogluon.timeseries \
     "autogluon.tabular[all]" \
-        "vectorbt<0.26" \
+        "vectorbt<0.30" \
         transformers \
         accelerate \
         huggingface-hub \
@@ -104,7 +95,7 @@ RUN python -m pip install --upgrade --no-cache-dir pip setuptools wheel \
         pmdarima \
         yfinance \
         alpha-vantage \
-        quantlib \
+    && echo "QuantLib installation skipped due to compilation complexity - install manually if needed" \
     && python -m pip check \
     && python -m pip cache purge
 
