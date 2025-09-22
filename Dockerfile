@@ -95,7 +95,7 @@ RUN python -m pip install --upgrade --no-cache-dir pip setuptools wheel \
         pmdarima \
         yfinance \
         alpha-vantage \
-        quantlib \
+    && echo "QuantLib installation skipped due to compilation complexity - install manually if needed" \
     && python -m pip check \
     && python -m pip cache purge
 
